@@ -17,7 +17,8 @@ final class Updater {
         let assets: [Asset]
     }
 
-    private static let latest = URL(string: "https://api.github.com/repos/michalp1111/insomnia/releases/latest")!
+    /// The repository's numeric ID survives renames, so nobody can step into an old name and serve an update.
+    private static let latest = URL(string: "https://api.github.com/repositories/1414741619/releases/latest")!
 
     var onChange: () -> Void = {}
     private(set) var version: String?
