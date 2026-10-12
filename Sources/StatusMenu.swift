@@ -15,6 +15,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
     let menu = NSMenu()
     private let insomnia: Insomnia
+    private let updater: Updater?
     private let header = HeaderView()
     private static let rate = ByteCountFormatter()
 
@@ -37,8 +38,9 @@ final class StatusMenu: NSObject, NSMenuDelegate {
     // A file system check, so it is made when the menu opens rather than on every refresh.
     private lazy var canKeepLidClosed = insomnia.power.canKeepLidClosed
 
-    init(insomnia: Insomnia) {
+    init(insomnia: Insomnia, updater: Updater?) {
         self.insomnia = insomnia
+        self.updater = updater
         super.init()
         menu.delegate = self
         menu.autoenablesItems = false
@@ -50,6 +52,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         workingOption.onSelect = { [weak self] in self?.choose(.working) }
         alwaysOption.onSelect = { [weak self] in self?.choose(.always) }
         insomnia.onChange = { [weak self] in self?.update() }
+        updater?.onChange = { [weak self] in self?.update() }
         update()
         updateMenu()
     }
@@ -85,7 +88,7 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     private func updateMenu() {
         let rows = workRows
-        let structure = "\(insomnia.mode) \(rows.count) \(canKeepLidClosed)"
+        let structure = "\(insomnia.mode) \(rows.count) \(canKeepLidClosed) \(updater?.version ?? "") \(updater?.isInstalling == true)"
         if structure != self.structure {
             self.structure = structure
             rebuild(workRows: rows.count)
@@ -121,6 +124,11 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
+        if let updater, let version = updater.version {
+            let update = item(updater.isInstalling ? "Updating to \(version)…" : "Update to \(version)", #selector(installUpdate))
+            update.isEnabled = !updater.isInstalling
+            menu.addItem(update)
+        }
         menu.addItem(item("About Insomnia", #selector(about)))
         menu.addItem(item("Settings…", #selector(openSettings), key: ","))
         menu.addItem(item("Quit Insomnia", #selector(quit), key: "q"))
@@ -216,6 +224,10 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         credits.append(NSAttributedString(string: "CzechCrunch",
                                           attributes: attributes.merging([.link: URL(string: "https://cc.cz")!]) { $1 }))
         return credits
+    }
+
+    @objc private func installUpdate() {
+        Task { await updater?.install() }
     }
 
     @objc private func about() {

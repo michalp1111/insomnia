@@ -28,6 +28,8 @@ It works for video editors waiting on an export, 3D artists rendering overnight,
 
 Insomnia now sits in the menu bar as a closed eye. Click it and flip the switch. The first time, macOS asks for your password once so that Insomnia can keep working with the lid closed. To have it start with your Mac, turn on **Open at Login** in its Settings.
 
+Insomnia keeps itself up to date. When a new version is out, **Update** appears in its menu, and one click installs it.
+
 ## How it works
 
 - **While Working** keeps the Mac awake only while something is actually working, and lets it sleep 5 minutes after everything finishes.
@@ -46,7 +48,7 @@ While Working counts:
   <img src="docs/settings.png" width="420" alt="Insomnia settings">
 </p>
 
-Background system processes, such as Spotlight indexing, do not count. Everything stays on the Mac: Insomnia makes no network requests and collects nothing.
+Background system processes, such as Spotlight indexing, do not count. Everything stays on the Mac: the only network request Insomnia makes is a daily look at GitHub for a new version, and it collects nothing.
 
 ## The closed lid
 

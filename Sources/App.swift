@@ -5,6 +5,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var insomnia: Insomnia!
     private var statusMenu: StatusMenu!
+    private var updater: Updater!
 
     static func main() {
         let app = NSApplication.shared
@@ -18,13 +19,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let snapshot = Snapshot.requested {
             insomnia = Insomnia(defaults: snapshot.defaults)
             insomnia.demo = snapshot.demo
-            statusMenu = StatusMenu(insomnia: insomnia)
+            statusMenu = StatusMenu(insomnia: insomnia, updater: nil)
             snapshot.run(statusMenu)
             return
         }
         #endif
         insomnia = Insomnia(defaults: .standard)
-        statusMenu = StatusMenu(insomnia: insomnia)
+        updater = Updater()
+        statusMenu = StatusMenu(insomnia: insomnia, updater: updater)
         // Never shown for a menu bar app, but gives the settings window its ⌘W.
         let file = NSMenuItem()
         file.submenu = NSMenu()
