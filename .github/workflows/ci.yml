@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths: &app
+      - Sources/**
+      - Resources/**
+      - Support/**
+      - scripts/**
+      - .github/workflows/ci.yml
+  pull_request:
+    paths: *app
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Dispatch needs write access anyway; this narrows it to the owner, not collaborators.
+    if: github.event_name != 'workflow_dispatch' || github.actor == github.repository_owner
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - run: scripts/build.sh release
+      - run: scripts/verify.sh
+      # ditto keeps the executable bit and the signature, which the artifact zip drops;
+      # archive: false uploads that zip as-is instead of zipping it again.
+      - run: ditto -c -k --keepParent build/release/Insomnia.app Insomnia.zip
+      - uses: actions/upload-artifact@v7
+        with:
+          path: Insomnia.zip
+          archive: false
+          retention-days: 14

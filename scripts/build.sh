@@ -28,6 +28,9 @@ if [ ! -f Resources/AppIcon.icns ]; then
 fi
 
 FLAGS+=(-parse-as-library -module-name Insomnia -swift-version 6)
+# Swift 6 reports many concurrency bugs as warnings. CI fails on them; a local
+# build does not, so a newer compiler's new warnings never block one.
+[ "$CI" = true ] && FLAGS+=(-warnings-as-errors)
 if [ "$CONFIG" = release ]; then
   FLAGS+=(-O -whole-module-optimization)
   ARCHS=(arm64 x86_64)
