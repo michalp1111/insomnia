@@ -21,7 +21,15 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     private let workingOption = OptionView(symbol: "hourglass", title: "While Working")
     private let alwaysOption = OptionView(symbol: "infinity", title: "Until Turned Off")
-    private let note = NoteView()
+    private lazy var workingSeparator = NSMenuItem.separator()
+    private lazy var workingHeader = NSMenuItem.sectionHeader(title: "Working Now")
+    private lazy var noteItem = item(view: NoteView(text: "Nothing at the moment"), enabled: false)
+    private lazy var lidSeparator = NSMenuItem.separator()
+    private lazy var lidItem = item("Stay Awake with Lid Closed…", #selector(allowClosedLid))
+    private lazy var updateItem = item("", #selector(installUpdate))
+    /// Rows for work, each with a view of its own for good: on macOS 26 a view moved into a new item while the
+    /// menu is open stays blank, so items are only ever added, hidden and shown.
+    private var workItems: [NSMenuItem] = []
     lazy var settings: NSWindow = {
         let window = NSWindow(contentViewController: NSHostingController(rootView: SettingsView(insomnia: insomnia)))
         window.title = "Insomnia Settings"
@@ -30,8 +38,6 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         window.center()
         return window
     }()
-    private var workViews: [WorkView] = []
-    private var structure = ""
     private var isOpen = false
     private var shownAwake: Bool?
     private var shownOn: Bool?
@@ -46,13 +52,19 @@ final class StatusMenu: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         statusItem.menu = menu
         statusItem.button?.toolTip = "Insomnia"
-        note.text = "Nothing at the moment"
         header.toggle.target = self
         header.toggle.action = #selector(toggle)
         workingOption.onSelect = { [weak self] in self?.choose(.working) }
         alwaysOption.onSelect = { [weak self] in self?.choose(.always) }
         insomnia.onChange = { [weak self] in self?.update() }
         updater?.onChange = { [weak self] in self?.update() }
+        menu.items = [
+            item(view: header), .separator(), .sectionHeader(title: "Stay Awake"),
+            item(view: workingOption, action: #selector(pick)), item(view: alwaysOption, action: #selector(pick)),
+            workingSeparator, workingHeader, noteItem, lidSeparator, lidItem, .separator(), updateItem,
+            item("About Insomnia", #selector(about)), item("Settings…", #selector(openSettings), key: ","),
+            item("Quit Insomnia", #selector(quit), key: "q"),
+        ]
         update()
         updateMenu()
     }
@@ -88,50 +100,31 @@ final class StatusMenu: NSObject, NSMenuDelegate {
 
     private func updateMenu() {
         let rows = workRows
-        let structure = "\(insomnia.mode) \(rows.count) \(canKeepLidClosed) \(updater?.version ?? "") \(updater?.isInstalling == true)"
-        if structure != self.structure {
-            self.structure = structure
-            rebuild(workRows: rows.count)
+        let watching = insomnia.mode == .working
+        while workItems.count < rows.count {
+            let row = item(view: WorkView(), enabled: false)
+            menu.insertItem(row, at: menu.index(of: noteItem))
+            workItems.append(row)
         }
+        for (index, item) in workItems.enumerated() {
+            item.isHidden = !watching || index >= rows.count
+            if index < rows.count { (item.view as? WorkView)?.row = rows[index] }
+        }
+        workingSeparator.isHidden = !watching
+        workingHeader.isHidden = !watching
+        noteItem.isHidden = !watching || !rows.isEmpty
+        lidSeparator.isHidden = canKeepLidClosed
+        lidItem.isHidden = canKeepLidClosed
+        if let version = updater?.version {
+            updateItem.title = updater?.isInstalling == true ? "Updating to \(version)…" : "Update to \(version)"
+            updateItem.isEnabled = updater?.isInstalling == false
+        }
+        updateItem.isHidden = updater?.version == nil
 
         header.toggle.state = insomnia.isOn ? .on : .off
         header.statusText = status
         workingOption.isSelected = insomnia.mode == .working
         alwaysOption.isSelected = insomnia.mode == .always
-        for (view, row) in zip(workViews, rows) { view.row = row }
-    }
-
-    private func rebuild(workRows: Int) {
-        menu.removeAllItems()
-        menu.addItem(item(view: header))
-        menu.addItem(.separator())
-        menu.addItem(.sectionHeader(title: "Stay Awake"))
-        menu.addItem(item(view: workingOption, action: #selector(pick)))
-        menu.addItem(item(view: alwaysOption, action: #selector(pick)))
-
-        if insomnia.mode == .working {
-            menu.addItem(.separator())
-            menu.addItem(.sectionHeader(title: "Working Now"))
-            while workViews.count < workRows { workViews.append(WorkView()) }
-            workViews.removeLast(workViews.count - workRows)
-            for view in workViews { menu.addItem(item(view: view, enabled: false)) }
-            if workRows == 0 { menu.addItem(item(view: note, enabled: false)) }
-        }
-
-        if !canKeepLidClosed {
-            menu.addItem(.separator())
-            menu.addItem(item("Stay Awake with Lid Closed…", #selector(allowClosedLid)))
-        }
-
-        menu.addItem(.separator())
-        if let updater, let version = updater.version {
-            let update = item(updater.isInstalling ? "Updating to \(version)…" : "Update to \(version)", #selector(installUpdate))
-            update.isEnabled = !updater.isInstalling
-            menu.addItem(update)
-        }
-        menu.addItem(item("About Insomnia", #selector(about)))
-        menu.addItem(item("Settings…", #selector(openSettings), key: ","))
-        menu.addItem(item("Quit Insomnia", #selector(quit), key: "q"))
     }
 
     private var status: String {

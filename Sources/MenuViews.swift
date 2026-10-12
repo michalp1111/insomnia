@@ -172,17 +172,14 @@ final class WorkView: MenuRowView {
 
 /// A line of secondary text, for an empty list.
 final class NoteView: MenuRowView {
-    var text = "" {
-        didSet {
-            needsDisplay = true
-            setAccessibilityLabel(text)
-        }
-    }
+    private let text: String
 
-    init() {
+    init(text: String) {
+        self.text = text
         super.init(height: 26)
         setAccessibilityElement(true)
         setAccessibilityRole(.staticText)
+        setAccessibilityLabel(text)
     }
 
     required init?(coder: NSCoder) { fatalError() }
