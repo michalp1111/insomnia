@@ -20,7 +20,7 @@ It works for video editors waiting on an export, 3D artists rendering overnight,
 
 ## Download
 
-**[Download Insomnia](https://github.com/michalp1111/insomnia/releases/latest/download/Insomnia.zip)** for macOS 14 or later, on Apple silicon or Intel.
+**[Download Insomnia](https://github.com/michalptacekcz/insomnia/releases/latest/download/Insomnia.zip)** for macOS 14 or later, on Apple silicon or Intel.
 
 1. Open the downloaded `Insomnia.zip`, unless your browser already did, and drag **Insomnia** into your **Applications** folder.
 2. Open Insomnia. It is not notarized by Apple yet, so the first time macOS refuses to open it. Click **Done**.
